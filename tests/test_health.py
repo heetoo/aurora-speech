@@ -7,6 +7,6 @@ def test_health_ok(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.json() == {
         "status": "healthy",
-        "engine": "kokoro-82m-v1",
+        "engine": "kokoro-82m-v2",
         "version": "1.0.0",
     }

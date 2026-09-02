@@ -21,7 +21,7 @@ sha256( canonical_json({ "engine", "voice", "mode", "text" }) )
 Example input:
 
 ```json
-{"engine":"kokoro-82m-v1","mode":"word","text":"bola","voice":"teacher_female_v1"}
+{"engine":"kokoro-82m-v2","mode":"word","text":"bola","voice":"teacher_female_v1"}
 ```
 
 The digest is 64 lowercase hex characters. The same four inputs always produce

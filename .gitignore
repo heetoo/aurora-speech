@@ -21,3 +21,6 @@ htmlcov/
 # Local cache contents (keep the directory, ignore the audio)
 cache/*
 !cache/.gitkeep
+
+# local experiment scratch area
+/scratch/

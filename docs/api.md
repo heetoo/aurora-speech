@@ -97,7 +97,7 @@ Liveness probe and active-engine report. Used by the container `HEALTHCHECK`.
 ```json
 {
   "status": "healthy",
-  "engine": "kokoro-82m-v1",
+  "engine": "kokoro-82m-v2",
   "version": "1.0.0"
 }
 ```

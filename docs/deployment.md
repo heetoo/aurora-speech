@@ -43,8 +43,16 @@ All configuration is environment-driven (`app/config.py`, `pydantic-settings`).
 | `APP_NAME`       | `Aurora Speech`     | OpenAPI title                                |
 | `APP_VERSION`    | `1.0.0`             | Reported by `/health`                        |
 | `CACHE_DIR`      | `/app/cache` (image)| Cache root; keep pointed at the mounted vol  |
-| `ENGINE_NAME`    | `kokoro-82m-v1`     | Logical engine id; part of the cache key     |
+| `ENGINE_NAME`    | `kokoro-82m-v2`     | Logical engine id; part of the cache key     |
 | `DEFAULT_VOICE`  | `teacher_female_v1` | Fallback voice                               |
+| `AUDIO_LOWPASS_HZ`  | `6000`          | One-pole HF de-emphasis cutoff; `0` disables |
+| `AUDIO_FADE_IN_MS`  | `10`            | Linear fade-in length                        |
+| `AUDIO_FADE_OUT_MS` | `120`           | Raised-cosine fade-out length; `0` disables  |
+
+The three `AUDIO_*` knobs shape the waveform post-processing that reduces the
+trailing breath/hiss the pt-BR Kokoro voices append (see
+[`architecture.md`](architecture.md#waveform-post-processing)). Changing any of
+them changes the audio output, so bump `ENGINE_NAME` when you do.
 
 Copy `.env.example` to `.env` to override locally.
 

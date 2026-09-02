@@ -9,7 +9,7 @@ services:
       APP_NAME: Aurora Speech
       APP_VERSION: 1.0.0
       CACHE_DIR: /app/cache
-      ENGINE_NAME: kokoro-82m-v1
+      ENGINE_NAME: kokoro-82m-v2
       DEFAULT_VOICE: teacher_female_v1
     volumes:
       # ARCHITECTURAL DECISION - DO NOT CHANGE WITHOUT UPDATING docs/deployment.md

@@ -85,6 +85,25 @@ it, and update the `engine_voice` column in `voices.py`. Request and response
 shapes, headers and the cache key structure stay identical. Bumping
 `ENGINE_NAME` then transparently invalidates the old cache.
 
+## Waveform post-processing
+
+`KokoroEngine.synthesize` does not encode the raw model output directly.
+`_finalize_waveform` (in `app/engine.py`) runs first:
+
+1. **Clip guard** — peak-normalise if any sample exceeds ±1.0.
+2. **Silence trim** — drop the near-silent head/tail, keeping a ~10 ms margin.
+3. **HF de-emphasis** — a one-pole low-pass at `AUDIO_LOWPASS_HZ` (default
+   6 kHz), implemented as a truncated exponential FIR (no SciPy).
+4. **Fades** — a short linear fade-in (`AUDIO_FADE_IN_MS`) and a long
+   raised-cosine fade-out (`AUDIO_FADE_OUT_MS`, default 120 ms).
+
+Steps 3–4 exist because the pt-BR Kokoro voices append a low-level
+high-frequency breath/hiss after the word; together they cut roughly half of
+that tail energy while leaving legitimate word-final fricatives intact. The
+parameters are settings, and `ENGINE_NAME` (`kokoro-82m-v2`) encodes this
+processing so a change to it invalidates the cache. Set `AUDIO_LOWPASS_HZ=0`
+or `AUDIO_FADE_OUT_MS=0` to bypass a stage.
+
 ## Concurrency
 
 `engine.synthesize` is synchronous and CPU-bound; the route awaits it via

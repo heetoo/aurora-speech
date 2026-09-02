@@ -26,7 +26,7 @@ _SAMPLE_RATE = 24_000
 class StubEngine(SpeechEngine):
     """Deterministic fake engine that returns a real short OGG file."""
 
-    name = "kokoro-82m-v1"
+    name = "kokoro-82m-v2"
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, str, float]] = []

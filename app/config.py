@@ -31,14 +31,23 @@ class Settings(BaseSettings):
     cache_dir: Path = Field(default=Path("cache"))
 
     # Logical engine identifier. Part of the cache key, so bumping it
-    # transparently invalidates every previously cached file.
-    engine_name: str = Field(default="kokoro-82m-v1")
+    # transparently invalidates every previously cached file. Bump it whenever a
+    # change alters the audio output (engine, voices, or the post-processing
+    # below). ``v2`` = adds the trailing HF de-emphasis + long fade-out.
+    engine_name: str = Field(default="kokoro-82m-v2")
     default_voice: str = Field(default="teacher_female_v1")
 
     # Fixed language contract. This service is pt-BR only.
     language: str = Field(default="pt-BR")
     kokoro_lang_code: str = Field(default="p")
     kokoro_repo_id: str = Field(default="hexgrad/Kokoro-82M")
+
+    # Waveform post-processing applied before encoding, to tame the trailing
+    # breath/hiss the pt-BR Kokoro voices append (see scratch/FINDINGS.md).
+    # Set either value to 0 to disable that stage.
+    audio_lowpass_hz: int = Field(default=6000)  # one-pole HF de-emphasis
+    audio_fade_in_ms: int = Field(default=10)
+    audio_fade_out_ms: int = Field(default=120)  # raised-cosine fade-out
 
     # Maximum accepted input length, in characters.
     max_text_length: int = Field(default=500)

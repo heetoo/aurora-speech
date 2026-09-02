@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.cache import Cache
 
-_BASE = dict(engine="kokoro-82m-v1", voice="teacher_female_v1", mode="word", text="bola")
+_BASE = dict(engine="kokoro-82m-v2", voice="teacher_female_v1", mode="word", text="bola")
 
 
 def test_key_is_deterministic() -> None:
