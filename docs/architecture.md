@@ -93,16 +93,20 @@ shapes, headers and the cache key structure stay identical. Bumping
 1. **Clip guard** — peak-normalise if any sample exceeds ±1.0.
 2. **Silence trim** — drop the near-silent head/tail, keeping a ~10 ms margin.
 3. **HF de-emphasis** — a one-pole low-pass at `AUDIO_LOWPASS_HZ` (default
-   6 kHz), implemented as a truncated exponential FIR (no SciPy).
+   3.5 kHz), implemented as a truncated exponential FIR (no SciPy).
 4. **Fades** — a short linear fade-in (`AUDIO_FADE_IN_MS`) and a long
-   raised-cosine fade-out (`AUDIO_FADE_OUT_MS`, default 120 ms).
+   raised-cosine fade-out (`AUDIO_FADE_OUT_MS`, default 200 ms).
+5. **Trailing noise gate** — walk back from the end in 20 ms windows while each
+   is quieter than `AUDIO_GATE_FLOOR_DB` (default −30 dBFS), then quadratically
+   ramp that whole span to zero.
 
-Steps 3–4 exist because the pt-BR Kokoro voices append a low-level
-high-frequency breath/hiss after the word; together they cut roughly half of
-that tail energy while leaving legitimate word-final fricatives intact. The
-parameters are settings, and `ENGINE_NAME` (`kokoro-82m-v2`) encodes this
-processing so a change to it invalidates the cache. Set `AUDIO_LOWPASS_HZ=0`
-or `AUDIO_FADE_OUT_MS=0` to bypass a stage.
+Steps 3–5 exist because the pt-BR Kokoro voices append a low-level
+high-frequency breath/hiss after the last phoneme (word-dependent — "bola" has
+it, "escola" does not). Together they cut roughly 4–5× of that tail energy
+while leaving louder, legitimate word-final fricatives (`s`, `z`, `x`) intact.
+The parameters are settings; `ENGINE_NAME` (`kokoro-82m-v2`) encodes this
+processing so a change to it invalidates the cache. Set `AUDIO_LOWPASS_HZ=0`,
+`AUDIO_FADE_OUT_MS=0` or `AUDIO_GATE_ENABLED=false` to bypass a stage.
 
 ## Concurrency
 

@@ -45,12 +45,14 @@ All configuration is environment-driven (`app/config.py`, `pydantic-settings`).
 | `CACHE_DIR`      | `/app/cache` (image)| Cache root; keep pointed at the mounted vol  |
 | `ENGINE_NAME`    | `kokoro-82m-v2`     | Logical engine id; part of the cache key     |
 | `DEFAULT_VOICE`  | `teacher_female_v1` | Fallback voice                               |
-| `AUDIO_LOWPASS_HZ`  | `6000`          | One-pole HF de-emphasis cutoff; `0` disables |
-| `AUDIO_FADE_IN_MS`  | `10`            | Linear fade-in length                        |
-| `AUDIO_FADE_OUT_MS` | `120`           | Raised-cosine fade-out length; `0` disables  |
+| `AUDIO_LOWPASS_HZ`   | `3500`         | One-pole HF de-emphasis cutoff; `0` disables |
+| `AUDIO_FADE_IN_MS`   | `10`           | Linear fade-in length                        |
+| `AUDIO_FADE_OUT_MS`  | `200`          | Raised-cosine fade-out length; `0` disables  |
+| `AUDIO_GATE_ENABLED` | `true`         | Trailing noise gate on/off                   |
+| `AUDIO_GATE_FLOOR_DB`| `-30.0`        | Tail RMS below this dBFS is ramped to zero   |
 
-The three `AUDIO_*` knobs shape the waveform post-processing that reduces the
-trailing breath/hiss the pt-BR Kokoro voices append (see
+The `AUDIO_*` knobs shape the waveform post-processing that reduces the trailing
+breath/hiss the pt-BR Kokoro voices append (see
 [`architecture.md`](architecture.md#waveform-post-processing)). Changing any of
 them changes the audio output, so bump `ENGINE_NAME` when you do.
 

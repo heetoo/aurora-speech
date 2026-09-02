@@ -33,7 +33,8 @@ class Settings(BaseSettings):
     # Logical engine identifier. Part of the cache key, so bumping it
     # transparently invalidates every previously cached file. Bump it whenever a
     # change alters the audio output (engine, voices, or the post-processing
-    # below). ``v2`` = adds the trailing HF de-emphasis + long fade-out.
+    # below). ``v2`` = adds the trailing-hiss clean-up (HF de-emphasis, long
+    # fade-out, tail noise gate).
     engine_name: str = Field(default="kokoro-82m-v2")
     default_voice: str = Field(default="teacher_female_v1")
 
@@ -44,10 +45,11 @@ class Settings(BaseSettings):
 
     # Waveform post-processing applied before encoding, to tame the trailing
     # breath/hiss the pt-BR Kokoro voices append (see scratch/FINDINGS.md).
-    # Set either value to 0 to disable that stage.
-    audio_lowpass_hz: int = Field(default=6000)  # one-pole HF de-emphasis
+    audio_lowpass_hz: int = Field(default=3500)  # one-pole HF de-emphasis; 0 = off
     audio_fade_in_ms: int = Field(default=10)
-    audio_fade_out_ms: int = Field(default=120)  # raised-cosine fade-out
+    audio_fade_out_ms: int = Field(default=200)  # raised-cosine fade-out; 0 = off
+    audio_gate_enabled: bool = Field(default=True)  # trailing noise gate
+    audio_gate_floor_db: float = Field(default=-30.0)  # RMS below this is ramped out
 
     # Maximum accepted input length, in characters.
     max_text_length: int = Field(default=500)

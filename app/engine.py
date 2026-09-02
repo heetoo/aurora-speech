@@ -22,6 +22,32 @@ _SAMPLE_RATE = 24_000
 # Waveform clean-up tuned for Kokoro's 24 kHz output.
 _SILENCE_THRESHOLD = 0.01  # |sample| at or below this counts as silence
 _EDGE_MARGIN = 240  # keep ~10 ms of context around trimmed edges
+_GATE_WINDOW_MS = 20  # analysis window for the trailing noise gate
+
+
+def _noise_gate_tail(audio: np.ndarray, sample_rate: int, floor_db: float) -> np.ndarray:
+    """Ramp down the trailing run whose local RMS stays below ``floor_db``.
+
+    Walks back from the end in ``_GATE_WINDOW_MS`` windows while each is below
+    the floor, then applies a quadratic ramp-to-zero over that whole span. This
+    removes the low-level breath/hiss the pt-BR Kokoro voices leave after the
+    last phoneme without touching louder, word-final fricatives.
+    """
+    n = int(_GATE_WINDOW_MS * sample_rate / 1000)
+    if n <= 0 or audio.size < 2 * n:
+        return audio
+    floor = 10.0 ** (floor_db / 20.0)
+    cut = audio.size
+    while cut - n > 0:
+        window = audio[cut - n : cut].astype("float64")
+        if float(np.sqrt(np.mean(window**2))) >= floor:
+            break
+        cut -= n
+    if cut < audio.size:
+        audio = audio.copy()
+        span = audio.size - cut
+        audio[cut:] *= np.linspace(1.0, 0.0, span, dtype="float32") ** 2
+    return audio
 
 
 def _one_pole_lowpass(audio: np.ndarray, sample_rate: int, cutoff_hz: float) -> np.ndarray:
@@ -44,17 +70,20 @@ def _finalize_waveform(
     audio: np.ndarray,
     *,
     sample_rate: int = _SAMPLE_RATE,
-    lowpass_hz: float = 6000.0,
+    lowpass_hz: float = 3500.0,
     fade_in_ms: float = 10.0,
-    fade_out_ms: float = 120.0,
+    fade_out_ms: float = 200.0,
+    gate_floor_db: float | None = -30.0,
 ) -> np.ndarray:
     """Clean up a raw Kokoro waveform before encoding.
 
-    Steps: guard against clipping, trim the near-silent head/tail (keeping a
-    small margin), apply a one-pole HF de-emphasis, then a short fade-in and a
-    long raised-cosine fade-out. The last two stages tame the trailing
-    breath/hiss the pt-BR Kokoro voices append (see ``scratch/FINDINGS.md``);
-    pass ``lowpass_hz=0`` or ``fade_out_ms=0`` to skip them.
+    Pipeline: clipping guard -> trim near-silent head/tail (small margin) ->
+    one-pole HF de-emphasis (``lowpass_hz``) -> short fade-in + long
+    raised-cosine fade-out (``fade_in_ms`` / ``fade_out_ms``) -> trailing noise
+    gate (``gate_floor_db``). Everything after the trim tames the low-level
+    breath/hiss the pt-BR Kokoro voices append (see ``scratch/FINDINGS.md``).
+    Pass ``lowpass_hz=0``, ``fade_out_ms=0`` or ``gate_floor_db=None`` to skip
+    the corresponding stage.
     """
     audio = np.asarray(audio, dtype="float32").reshape(-1)
     if audio.size == 0:
@@ -81,6 +110,9 @@ def _finalize_waveform(
     if n_out > 0:
         t = np.linspace(0.0, 1.0, n_out, dtype="float32")
         audio[-n_out:] *= (0.5 * (1.0 + np.cos(np.pi * t))).astype("float32")
+
+    if gate_floor_db is not None:
+        audio = _noise_gate_tail(audio, sample_rate, gate_floor_db)
 
     return audio
 
@@ -110,6 +142,7 @@ class KokoroEngine(SpeechEngine):
         lowpass_hz: float = 0.0,
         fade_in_ms: float = 10.0,
         fade_out_ms: float = 15.0,
+        gate_floor_db: float | None = None,
     ) -> None:
         self.name = name
         self._lang_code = lang_code
@@ -117,6 +150,7 @@ class KokoroEngine(SpeechEngine):
         self._lowpass_hz = lowpass_hz
         self._fade_in_ms = fade_in_ms
         self._fade_out_ms = fade_out_ms
+        self._gate_floor_db = gate_floor_db
         self._pipeline: Any | None = None
 
     def _get_pipeline(self) -> Any:
@@ -157,6 +191,7 @@ class KokoroEngine(SpeechEngine):
             lowpass_hz=self._lowpass_hz,
             fade_in_ms=self._fade_in_ms,
             fade_out_ms=self._fade_out_ms,
+            gate_floor_db=self._gate_floor_db,
         )
         if audio.size == 0:
             raise RuntimeError("kokoro produced only silence for the given input")
@@ -178,6 +213,7 @@ def _build_kokoro_engine(
     lowpass_hz: float,
     fade_in_ms: float,
     fade_out_ms: float,
+    gate_floor_db: float | None,
 ) -> KokoroEngine:
     return KokoroEngine(
         name,
@@ -186,6 +222,7 @@ def _build_kokoro_engine(
         lowpass_hz=lowpass_hz,
         fade_in_ms=fade_in_ms,
         fade_out_ms=fade_out_ms,
+        gate_floor_db=gate_floor_db,
     )
 
 
@@ -198,6 +235,7 @@ def build_engine(settings: Settings) -> SpeechEngine:
         float(settings.audio_lowpass_hz),
         float(settings.audio_fade_in_ms),
         float(settings.audio_fade_out_ms),
+        settings.audio_gate_floor_db if settings.audio_gate_enabled else None,
     )
 
 
