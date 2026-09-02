@@ -12,11 +12,48 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 from typing import Any
 
+import numpy as np
 from fastapi import Depends
 
 from app.config import Settings, get_settings
 
 _SAMPLE_RATE = 24_000
+
+# Waveform clean-up tuned for Kokoro's 24 kHz output.
+_SILENCE_THRESHOLD = 0.01  # |sample| at or below this counts as silence
+_EDGE_MARGIN = 240  # keep ~10 ms of context around trimmed edges
+_FADE_LEN = 360  # ~15 ms linear fade applied to both ends
+
+
+def _finalize_waveform(audio: np.ndarray) -> np.ndarray:
+    """Clean up a raw Kokoro waveform before encoding.
+
+    Guards against clipping, trims the near-silent head and tail (keeping a
+    small margin), and applies a short linear fade in/out so the clip does not
+    end on a hard sample discontinuity, which is audible as a click.
+    """
+    audio = np.asarray(audio, dtype="float32").reshape(-1)
+    if audio.size == 0:
+        return audio
+
+    peak = float(np.max(np.abs(audio)))
+    if peak > 1.0:
+        audio = audio / peak
+
+    voiced = np.flatnonzero(np.abs(audio) > _SILENCE_THRESHOLD)
+    if voiced.size:
+        start = max(0, int(voiced[0]) - _EDGE_MARGIN)
+        stop = min(audio.size, int(voiced[-1]) + 1 + _EDGE_MARGIN)
+        audio = audio[start:stop]
+
+    ramp = min(_FADE_LEN, audio.size // 2)
+    if ramp:
+        window = np.linspace(0.0, 1.0, ramp, dtype="float32")
+        audio = audio.copy()
+        audio[:ramp] *= window
+        audio[-ramp:] *= window[::-1]
+
+    return audio
 
 
 class SpeechEngine(ABC):
@@ -54,8 +91,7 @@ class KokoroEngine(SpeechEngine):
         return self._pipeline
 
     def synthesize(self, text: str, voice: str, speed: float) -> bytes:
-        """Run Kokoro and encode the waveform to OGG/Vorbis."""
-        import numpy as np
+        """Run Kokoro, clean up the waveform, and encode it to OGG/Vorbis."""
         import soundfile as sf
 
         pipeline = self._get_pipeline()
@@ -74,6 +110,9 @@ class KokoroEngine(SpeechEngine):
             raise RuntimeError("kokoro produced no audio for the given input")
 
         audio = segments[0] if len(segments) == 1 else np.concatenate(segments)
+        audio = _finalize_waveform(audio)
+        if audio.size == 0:
+            raise RuntimeError("kokoro produced only silence for the given input")
 
         buffer = io.BytesIO()
         sf.write(buffer, audio, _SAMPLE_RATE, format="OGG", subtype="VORBIS")
