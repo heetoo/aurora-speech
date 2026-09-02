@@ -21,8 +21,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 COPY app ./app
 
-# Exact versions from uv.lock, no dev tooling, plus the heavy Kokoro extra.
-RUN uv sync --frozen --no-dev --extra kokoro
+# Exact versions from uv.lock, without the dev tooling group.
+RUN uv sync --frozen --no-dev
 
 # ---------------------------------------------------------------------------
 # Runtime: minimal image, non-root user, healthcheck

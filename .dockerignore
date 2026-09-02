@@ -14,3 +14,4 @@ cache/
 !cache/.gitkeep
 .env
 .pre-commit-config.yaml
+Makefile

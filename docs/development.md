@@ -1,14 +1,18 @@
 # Development
 
-Dependency management is done with [uv](https://docs.astral.sh/uv/).
+Dependency management is done with [uv](https://docs.astral.sh/uv/). A `Makefile`
+wraps the common tasks — run `make help` for the list. Every target below has a
+`make` shortcut (`make sync`, `make run`, `make test`, `make check`, ...).
 
 ## Requirements
 
 - [uv](https://docs.astral.sh/uv/) (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
 - Python 3.12 — uv provisions it automatically from `.python-version`
-- (only to run real synthesis locally) `espeak-ng`
-  - macOS: `brew install espeak-ng`
-  - Debian/Ubuntu: `sudo apt-get install espeak-ng libsndfile1`
+
+That's it. `uv sync` pulls Kokoro, torch and a bundled `espeak-ng`
+(`espeakng-loader`). Only if you hit a phonemizer error, install the system
+package as a fallback: `brew install espeak-ng` (macOS) /
+`sudo apt-get install espeak-ng libsndfile1` (Debian/Ubuntu).
 
 ## Setup
 
@@ -16,15 +20,12 @@ Dependency management is done with [uv](https://docs.astral.sh/uv/).
 uv sync
 ```
 
-This creates `.venv/` and installs the locked runtime deps plus the `dev` group
-(FastAPI, pytest, Ruff, mypy, pre-commit) — but **not** Kokoro or torch, so it
-is fast. The test suite stubs the engine and never needs them.
+This creates `.venv/` and installs everything: the locked runtime deps
+(including the Kokoro engine and torch) plus the `dev` group (pytest, Ruff,
+mypy, pre-commit). Kokoro/torch are a large download the first time.
 
-To run actual synthesis locally, add the engine extra:
-
-```bash
-uv sync --extra kokoro
-```
+The test suite stubs the engine, so it never loads a model — but torch is still
+installed as a normal dependency.
 
 Run commands inside the environment with `uv run <cmd>` (no manual activation
 needed), or `source .venv/bin/activate`.
@@ -49,9 +50,13 @@ variables and `.env` both work; env vars win.
 ## Run the server
 
 ```bash
-uv run uvicorn app.main:app --reload
+make run           # uv run uvicorn app.main:app --reload
 # http://localhost:8000/docs
 ```
+
+The first `POST /v1/synthesize` (a cache MISS) downloads the Kokoro-82M weights
+(~330 MB, cached by Hugging Face afterwards), so it is slow. Subsequent MISSes
+are fast; a cache HIT never touches the engine at all.
 
 Smoke test:
 

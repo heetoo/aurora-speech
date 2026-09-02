@@ -69,18 +69,22 @@ curl -s -X POST http://localhost:8000/v1/synthesize \
 
 ### Local development
 
-Uses [uv](https://docs.astral.sh/uv/) for dependency management.
+Uses [uv](https://docs.astral.sh/uv/) for dependency management. A `Makefile`
+wraps the common tasks (`make help` lists them).
 
 ```bash
-uv sync                           # fast: runtime + dev tools, no Kokoro/torch
-uv run pytest                      # run the test suite
-uv run ruff check . && uv run ruff format --check . && uv run mypy
-
-# To actually run synthesis locally you also need the engine + espeak-ng:
-#   brew install espeak-ng   (macOS)   |   apt-get install espeak-ng   (Debian)
-uv sync --extra kokoro
-uv run uvicorn app.main:app --reload
+make sync                          # runtime + engine (Kokoro/torch) + dev tools
+make check                         # lint + typecheck + tests
+make run                           # uv run uvicorn app.main:app --reload
 ```
+
+`make sync` installs everything needed, including the phonemizer backend
+(`espeakng-loader` bundles `espeak-ng`). If you hit a phonemizer error, install
+the system package as a fallback: `brew install espeak-ng` (macOS) /
+`sudo apt-get install espeak-ng` (Debian).
+
+Equivalent raw commands: `uv sync`, `uv run pytest`, `uv run ruff check .`,
+`uv run mypy`, `uv run uvicorn app.main:app --reload`.
 
 More: [`docs/development.md`](docs/development.md).
 

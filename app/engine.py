@@ -42,7 +42,11 @@ class KokoroEngine(SpeechEngine):
         self._pipeline: Any | None = None
 
     def _get_pipeline(self) -> Any:
-        """Lazily construct and cache the Kokoro pipeline."""
+        """Lazily construct and cache the Kokoro pipeline.
+
+        The import is deferred so that importing this module (and building the
+        FastAPI app in tests) does not pull in torch or trigger a model load.
+        """
         if self._pipeline is None:
             from kokoro import KPipeline
 

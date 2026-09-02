@@ -17,13 +17,7 @@ dependencies = [
     "pydantic-settings>=2.6.0",
     "numpy>=1.26.0",
     "soundfile>=0.12.1",
-]
-
-[project.optional-dependencies]
-# Heavy runtime engine dependencies. Installed inside the Docker image and
-# whenever you actually want to run Kokoro locally. Kept as an opt-in extra so
-# the test suite and linters install fast.
-kokoro = [
+    # The synthesis engine. This service exists to run it; it is not optional.
     "kokoro>=0.9.2",
     "torch>=2.2.0",
 ]
@@ -38,10 +32,6 @@ dev = [
     "mypy>=1.13.0",
     "pre-commit>=4.0.0",
 ]
-
-[tool.uv]
-# `kokoro`/`torch` are an opt-in extra; never install them implicitly.
-default-groups = ["dev"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]

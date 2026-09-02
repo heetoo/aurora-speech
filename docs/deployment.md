@@ -5,9 +5,9 @@
 The `Dockerfile` is a two-stage build:
 
 1. **builder** — copies the `uv` binary from `ghcr.io/astral-sh/uv` and runs
-   `uv sync --frozen --no-dev --extra kokoro`, producing `/app/.venv` with the
-   exact versions from `uv.lock` (FastAPI, Uvicorn, Pydantic, soundfile, plus
-   Kokoro + torch, no dev tooling).
+   `uv sync --frozen --no-dev`, producing `/app/.venv` with the exact versions
+   from `uv.lock` (FastAPI, Uvicorn, Pydantic, soundfile, Kokoro + torch; the
+   `dev` group is excluded).
 2. **runtime** — `python:3.12-slim` with only the runtime apt packages, the
    copied `/app` (including `.venv`) and `app/`. Runs as the non-root user
    `aurora` (uid 1000). `--frozen` makes the build fail if `uv.lock` is stale.
