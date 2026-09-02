@@ -4,10 +4,13 @@
 
 The `Dockerfile` is a two-stage build:
 
-1. **builder** — creates `/opt/venv` and installs `.[kokoro]` (FastAPI, Uvicorn,
-   Pydantic, soundfile, plus Kokoro + torch).
+1. **builder** — copies the `uv` binary from `ghcr.io/astral-sh/uv` and runs
+   `uv sync --frozen --no-dev --extra kokoro`, producing `/app/.venv` with the
+   exact versions from `uv.lock` (FastAPI, Uvicorn, Pydantic, soundfile, plus
+   Kokoro + torch, no dev tooling).
 2. **runtime** — `python:3.12-slim` with only the runtime apt packages, the
-   copied venv and `app/`. Runs as the non-root user `aurora` (uid 1000).
+   copied `/app` (including `.venv`) and `app/`. Runs as the non-root user
+   `aurora` (uid 1000). `--frozen` makes the build fail if `uv.lock` is stale.
 
 Runtime apt packages:
 
@@ -105,7 +108,7 @@ Edit the volume line in `docker-compose.yml` to:
       - ./cache:/app/cache
 ```
 
-or run the app directly (`uvicorn app.main:app`) with `CACHE_DIR=./cache`.
+or run the app directly (`uv run uvicorn app.main:app`) with `CACHE_DIR=./cache`.
 
 ## Upgrades
 

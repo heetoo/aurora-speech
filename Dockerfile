@@ -5,23 +5,24 @@
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PYTHONUNBUFFERED=1
 
 # ---------------------------------------------------------------------------
-# Builder: create a self-contained virtualenv with all dependencies
+# Builder: resolve the locked environment into /app/.venv with uv
 # ---------------------------------------------------------------------------
 FROM base AS builder
-WORKDIR /build
+COPY --from=ghcr.io/astral-sh/uv:0.5.9 /uv /bin/uv
 
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never
 
-COPY pyproject.toml README.md ./
+WORKDIR /app
+COPY pyproject.toml uv.lock README.md ./
 COPY app ./app
-RUN pip install --upgrade pip \
-    && pip install ".[kokoro]"
+
+# Exact versions from uv.lock, no dev tooling, plus the heavy Kokoro extra.
+RUN uv sync --frozen --no-dev --extra kokoro
 
 # ---------------------------------------------------------------------------
 # Runtime: minimal image, non-root user, healthcheck
@@ -37,13 +38,12 @@ RUN apt-get update \
 
 RUN useradd --create-home --uid 1000 aurora
 
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH" \
+COPY --from=builder --chown=aurora:aurora /app /app
+ENV PATH="/app/.venv/bin:$PATH" \
     CACHE_DIR=/app/cache
 
 WORKDIR /app
-COPY app ./app
-RUN mkdir -p /app/cache && chown -R aurora:aurora /app
+RUN mkdir -p /app/cache && chown -R aurora:aurora /app/cache
 
 USER aurora
 EXPOSE 8000

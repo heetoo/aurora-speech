@@ -1,8 +1,11 @@
 # Development
 
+Dependency management is done with [uv](https://docs.astral.sh/uv/).
+
 ## Requirements
 
-- Python 3.12
+- [uv](https://docs.astral.sh/uv/) (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- Python 3.12 — uv provisions it automatically from `.python-version`
 - (only to run real synthesis locally) `espeak-ng`
   - macOS: `brew install espeak-ng`
   - Debian/Ubuntu: `sudo apt-get install espeak-ng libsndfile1`
@@ -10,19 +13,27 @@
 ## Setup
 
 ```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+uv sync
 ```
 
-`.[dev]` installs FastAPI, pytest, Ruff, mypy and pre-commit but **not** Kokoro
-or torch, so it is fast. The test suite stubs the engine and never needs them.
+This creates `.venv/` and installs the locked runtime deps plus the `dev` group
+(FastAPI, pytest, Ruff, mypy, pre-commit) — but **not** Kokoro or torch, so it
+is fast. The test suite stubs the engine and never needs them.
 
-To run actual synthesis locally, also install the engine extra:
+To run actual synthesis locally, add the engine extra:
 
 ```bash
-pip install -e ".[dev,kokoro]"
+uv sync --extra kokoro
 ```
+
+Run commands inside the environment with `uv run <cmd>` (no manual activation
+needed), or `source .venv/bin/activate`.
+
+### Lockfile
+
+`uv.lock` is committed and is the source of truth for exact versions. After
+changing dependencies in `pyproject.toml`, run `uv lock` and commit the result.
+CI / Docker use `uv sync --frozen` to fail if the lock is stale.
 
 ## Configuration
 
@@ -38,7 +49,7 @@ variables and `.env` both work; env vars win.
 ## Run the server
 
 ```bash
-uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload
 # http://localhost:8000/docs
 ```
 
@@ -53,7 +64,7 @@ curl -s -X POST localhost:8000/v1/synthesize \
 ## Tests
 
 ```bash
-pytest
+uv run pytest
 ```
 
 Covered:
@@ -72,9 +83,9 @@ real without loading a model.
 ## Lint, format, types
 
 ```bash
-ruff check .
-ruff format --check .
-mypy
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy
 ```
 
 - **Ruff** — lint + formatter. Config in `pyproject.toml` (`line-length = 100`,
@@ -85,8 +96,8 @@ mypy
 ## pre-commit
 
 ```bash
-pre-commit install
-pre-commit run --all-files
+uv run pre-commit install
+uv run pre-commit run --all-files
 ```
 
 Runs the pre-commit-hooks basics, Ruff (with `--fix`) + `ruff-format`, and mypy

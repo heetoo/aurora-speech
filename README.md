@@ -69,16 +69,17 @@ curl -s -X POST http://localhost:8000/v1/synthesize \
 
 ### Local development
 
+Uses [uv](https://docs.astral.sh/uv/) for dependency management.
+
 ```bash
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"          # fast: no Kokoro/torch
-pytest                            # run the test suite
-ruff check . && ruff format --check . && mypy
+uv sync                           # fast: runtime + dev tools, no Kokoro/torch
+uv run pytest                      # run the test suite
+uv run ruff check . && uv run ruff format --check . && uv run mypy
 
 # To actually run synthesis locally you also need the engine + espeak-ng:
 #   brew install espeak-ng   (macOS)   |   apt-get install espeak-ng   (Debian)
-pip install -e ".[dev,kokoro]"
-uvicorn app.main:app --reload
+uv sync --extra kokoro
+uv run uvicorn app.main:app --reload
 ```
 
 More: [`docs/development.md`](docs/development.md).
@@ -118,6 +119,6 @@ docs/           Markdown documentation
 
 ## Stack
 
-Python 3.12 · FastAPI · Uvicorn · Pydantic v2 · pydantic-settings ·
+Python 3.12 · uv · FastAPI · Uvicorn · Pydantic v2 · pydantic-settings ·
 Kokoro TTS (local) · soundfile · Docker / Compose · pytest · Ruff · mypy ·
 pre-commit.
