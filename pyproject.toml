@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Internal Aurora microservice for pt-BR speech synthesis using Kokoro TTS."
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "Proprietary" }
+license = { text = "MIT" }
 authors = [{ name = "Aurora Platform" }]
 dependencies = [
     "fastapi>=0.115.0",

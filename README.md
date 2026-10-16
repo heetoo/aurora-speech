@@ -126,3 +126,7 @@ docs/           Markdown documentation
 Python 3.12 · uv · FastAPI · Uvicorn · Pydantic v2 · pydantic-settings ·
 Kokoro TTS (local) · soundfile · Docker / Compose · pytest · Ruff · mypy ·
 pre-commit.
+
+## License
+
+[MIT](LICENSE)
