@@ -24,3 +24,6 @@ cache/*
 
 # local experiment scratch area
 /scratch/
+
+# macOS
+.DS_Store
