@@ -59,6 +59,14 @@ class Settings(BaseSettings):
     # in tests) to keep startup cheap.
     eager_engine_init: bool = Field(default=False)
 
+    # Error tracking. Sentry is only initialised when ``sentry_dsn`` is set, so
+    # local runs and tests never send anything. ``app_git_sha`` is injected at
+    # image build time and becomes the Sentry release.
+    sentry_dsn: str | None = Field(default=None)
+    sentry_environment: str = Field(default="production")
+    sentry_traces_sample_rate: float = Field(default=0.05)
+    app_git_sha: str = Field(default="dev")
+
 
 @lru_cache
 def get_settings() -> Settings:

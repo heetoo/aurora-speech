@@ -88,6 +88,22 @@ Equivalent raw commands: `uv sync`, `uv run pytest`, `uv run ruff check .`,
 
 More: [`docs/development.md`](docs/development.md).
 
+### Error tracking (optional)
+
+[Sentry](https://sentry.io) is only initialised when `SENTRY_DSN` is set, so
+local runs and tests send nothing. Request bodies and stack-frame local
+variables are never attached (the synthesized text never leaves the service),
+and PII collection is off.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `SENTRY_DSN` | empty | Enables Sentry |
+| `SENTRY_ENVIRONMENT` | `production` | Event environment |
+| `SENTRY_TRACES_SAMPLE_RATE` | `0.05` | Share of requests traced (`/health`, `/voices` and docs are skipped) |
+
+The release is the commit SHA:
+`APP_GIT_SHA=$(git rev-parse --short HEAD) docker compose up --build`.
+
 ---
 
 ## Documentation
