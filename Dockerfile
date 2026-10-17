@@ -29,6 +29,9 @@ RUN uv sync --frozen --no-dev
 # ---------------------------------------------------------------------------
 FROM base AS runtime
 
+# Commit SHA, used as the Sentry release. Pass with --build-arg APP_GIT_SHA=...
+ARG APP_GIT_SHA=unknown
+
 # espeak-ng   -> phonemizer backend required for pt-BR in Kokoro
 # libsndfile1 -> OGG/Vorbis encoding via soundfile
 # curl        -> container healthcheck
@@ -40,7 +43,8 @@ RUN useradd --create-home --uid 1000 aurora
 
 COPY --from=builder --chown=aurora:aurora /app /app
 ENV PATH="/app/.venv/bin:$PATH" \
-    CACHE_DIR=/app/cache
+    CACHE_DIR=/app/cache \
+    APP_GIT_SHA=${APP_GIT_SHA}
 
 WORKDIR /app
 RUN mkdir -p /app/cache && chown -R aurora:aurora /app/cache

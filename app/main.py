@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from app.api import router
 from app.config import get_settings
 from app.engine import KokoroEngine, build_engine
+from app.observability import init_sentry
 
 
 @asynccontextmanager
@@ -43,4 +44,5 @@ def create_app() -> FastAPI:
     return app
 
 
+init_sentry(get_settings())
 app = create_app()

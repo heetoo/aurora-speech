@@ -1,6 +1,9 @@
 services:
   aurora-speech:
-    build: .
+    build:
+      context: .
+      args:
+        APP_GIT_SHA: ${APP_GIT_SHA:-unknown}
     image: aurora-speech:latest
     container_name: aurora-speech
     ports:
@@ -11,6 +14,10 @@ services:
       CACHE_DIR: /app/cache
       ENGINE_NAME: kokoro-82m-v2
       DEFAULT_VOICE: teacher_female_v1
+      # Optional error tracking; empty DSN keeps Sentry off.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.05}
     volumes:
       # ARCHITECTURAL DECISION - DO NOT CHANGE WITHOUT UPDATING docs/deployment.md
       # The homelab keeps every service's persistent data under /storage.
